@@ -32,25 +32,29 @@ FusionEKF::FusionEKF() {
               0, 0.0009, 0,
               0, 0, 0.09;
 
-  /**
-   * TODO: Finish initializing the FusionEKF.
-   * TODO: Measurement Covariance, Measurement Matrix
-   */
+
+  // State Covariance Matrix
+  ekf_.P_ = MatrixXd(4, 4);
+  ekf._P_ << 1, 0, 0, 0,
+             0, 1, 0, 0,
+             0, 0, 1000, 0,
+             0, 0, 0, 1000;
   
   // State Transition Matrix (F_)
-  F_ = MatrixXd(4, 4);
-  F_ << 1, 0, 1, 0,
-  		0, 1, 0, 1,
-        0, 0, 1, 0,
-        0, 0, 0, 1;
+  ekf_.F_ = MatrixXd(4, 4);
+  ekf_.F_ << 1, 0, 1, 0,
+  		     0, 1, 0, 1,
+             0, 0, 1, 0,
+             0, 0, 0, 1;
   
-
-  // Initializing P
-  P_ = MatrixXd(4, 4);
-  P_ << 1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1000, 0,
-        0, 0, 0, 1000;
+  // Measurement Matrix - Lidar
+  H_ = MatrixXd(2, 4);
+  H_ << 1, 0, 0, 0,
+        0, 1, 0, 0;
+  
+  // Acceleration Noise
+  float noise_ax = 9;
+  float noise_ay = 9;
 
 
 }
@@ -91,7 +95,16 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       float vx = ro_dot * cos(phi);
       float vy = ro_dot * sin(phi);
       
-      ekf_.x << x, y, vx, vy;
+      // Ensure the Jacobian can be computed - Avoid division by zero
+      if (fabs(px) < 0.0001) {
+        px = 0.0001;
+      }
+      
+      if (fabs(py) < 0.0001) {
+        py = 0.0001;
+      }
+      
+      ekf_.x << px, py, vx, vy;
       
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -126,32 +139,32 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   // Update the State Transition Matrix with elapsed time
   ekf_.F_(0, 2) = dt;
   ekf_.F_(1, 3) = dt;
-
-  // Acceleration Noise
-  float noise_ax = 9;
-  float noise_ay = 9;
   
   // Update the Process Noise Covariance Matrix
   ekf_.Q_ = MatrixXd(4, 4);
   ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
-         0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
-         dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
-         0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
+             0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
+             dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
+             0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
 
   ekf_.Predict();
 
   /**
    * Update
    */
-
+  
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     
-    // TODO: Convert radar from polar to cartesian coordinates 
+    // Calculate the Kalman Filter using The Jacobian using the previous state
+    Hj_ = tools.CalculateJacobian(ekf_.x_);
+    ekf_.H_ = Hj_;
     ekf_.R_ = R_radar_;
-    ekf_.H_ = tools.CalculateJacobian(z)
+    
     ekf._UpdateEKF(measurement_pack.raw_measurements_);
 
   } else {
+    
+    ekf_.H_ = H_laser_;
     ekf_.R_ = R_laser_;
 	ekf._Update(measurement_pack.raw_measurements_);
   }

@@ -55,15 +55,28 @@ void KalmanFilter::Update(const VectorXd &z) {
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
   
   // Non-linear - Equations for RADAR Measurement
-  // Assuming vector z has already been converted from polar coordinates
+  float px = x_(0);
+  float py = x_(1);
+  float vx = x_(2);
+  float vy = x_(3);
   
-  // Get the Jacobian Matrix 
+  // Common terms across Jacobian matrix
+  float c1 = px*px+py*py; // (px^2 + py^2)
+  float c2 = sqrt(c1); // (px^2 + py^2)^1/2
 
+  float ro = c2;
+  float phi = arctan2(py, px);
+  float ro_dot = (px*vx + py*vy)/ro;
   
-  VectorXd z_pred = Hj * x_;
+  VectorXd hx = VectorXd(3);
+  
+  hx << ro, phi, ro_dot;
+  
+  VectorXd z_pred = hx * x_;
   VectorXd y = z - z_pred; // y = z - Hx'
-  MatrixXd Ht = Hj.transpose(); 
-  MatrixXd S = Hj * P_ * Ht + R_; // S = HP'H^T + R
+  
+  MatrixXd Ht = H_.transpose(); 
+  MatrixXd S = H_ * P_ * Ht + R_; // S = HP'H^T + R
   MatrixXd Si = S.inverse(); 
   MatrixXd PHt = P_ * Ht;
   MatrixXd K = PHt * Si; // K = P'H^TS^-1
