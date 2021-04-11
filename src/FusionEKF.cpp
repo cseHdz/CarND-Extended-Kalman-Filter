@@ -34,8 +34,19 @@ FusionEKF::FusionEKF() {
 
   /**
    * TODO: Finish initializing the FusionEKF.
-   * TODO: Set the process and measurement noises
+   * TODO: 4D State Vector, Measurement Covatiance, Measurement Matrix
    */
+  
+  // State Transition Matrix (F_)
+  F_ = MatrixXd(4, 4);
+  F_ << 1, 0, 1, 0,
+  		0, 1, 0, 1,
+        0, 0, 1, 0,
+        0, 0, 0, 1;
+  
+  // Acceleration Noise
+  noise_ax = 9;
+  noise_ay = 9;
 
 
 }
@@ -67,11 +78,18 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
-      // TODO: Initialize state.
+      
+      // Only initial State is known - set velocity to zero
+      
+      ekf_.x_ << measurement_pack.raw_measurements_[0], 
+      			 measurement_pack.raw_measurements_[1], 
+      			 0, 
+      			 0;
 
     }
-
-    // done initializing, no need to predict or update
+    
+    // No previous timestamp - Done Initializing
+    previous_timestamp_ = measurement_pack.timestamp_;
     is_initialized_ = true;
     return;
   }
@@ -86,6 +104,21 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    * TODO: Update the process noise covariance matrix.
    * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
+  
+  float dt_2 = dt * dt;
+  float dt_3 = dt_2 * dt;
+  float dt_4 = dt_3 * dt;
+
+  // Update the State Transition Matrix with dt
+  ekf_.F_(0, 2) = dt;
+  ekf_.F_(1, 3) = dt;
+
+  // Process Covariance Matrix
+  ekf_.Q_ = MatrixXd(4, 4);
+  ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
+         0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
+         dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
+         0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
 
   ekf_.Predict();
 
@@ -93,18 +126,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    * Update
    */
 
-  /**
-   * TODO:
-   * - Use the sensor type to perform the update step.
-   * - Update the state and covariance matrices.
-   */
 
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-    // TODO: Radar updates
+    
+    ekf._UpdateEKF(measurement_pack.raw_measurements_);
 
   } else {
-    // TODO: Laser updates
-
+	ekf._Update(measurement_pack.raw_measurements_);
   }
 
   // print the output
