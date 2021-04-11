@@ -73,7 +73,26 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   hx << ro, phi, ro_dot;
   
   VectorXd z_pred = hx * x_;
-  VectorXd y = z - z_pred; // y = z - Hx'
+  VectorXd y = z - z_pred; // y = z - hx(x')
+  
+  while (fabs(y(1)) > M_PI){
+    
+    // Reduce angle BY 2PI if greater than PI
+    // Increase angle by 2PI if smaller than PI
+    if (y(1) > M_PI){
+      y(1) -= M_PI;
+    } else {
+      y(1) += M_PI;
+    }
+  }
+    
+    y(1) > M_PI || y(1) < -M_PI ) {
+    if ( y(1) > M_PI ) {
+      y(1) -= M_PI;
+    } else {
+      y(1) += M_PI;
+    }
+  }
   
   MatrixXd Ht = H_.transpose(); 
   MatrixXd S = H_ * P_ * Ht + R_; // S = HP'H^T + R
