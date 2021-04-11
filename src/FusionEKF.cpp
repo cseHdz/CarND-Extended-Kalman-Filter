@@ -35,7 +35,7 @@ FusionEKF::FusionEKF() {
 
   // State Covariance Matrix
   ekf_.P_ = MatrixXd(4, 4);
-  ekf._P_ << 1, 0, 0, 0,
+  ekf_.P_ << 1, 0, 0, 0,
              0, 1, 0, 0,
              0, 0, 1000, 0,
              0, 0, 0, 1000;
@@ -48,13 +48,8 @@ FusionEKF::FusionEKF() {
              0, 0, 0, 1;
   
   // Measurement Matrix - Lidar
-  H_ = MatrixXd(2, 4);
-  H_ << 1, 0, 0, 0,
-        0, 1, 0, 0;
-  
-  // Acceleration Noise
-  float noise_ax = 9;
-  float noise_ay = 9;
+  H_laser_ << 1, 0, 0, 0,
+              0, 1, 0, 0;
 
 
 }
@@ -104,7 +99,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
         py = 0.0001;
       }
       
-      ekf_.x << px, py, vx, vy;
+      ekf_.x_ << px, py, vx, vy;
       
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -139,6 +134,10 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   // Update the State Transition Matrix with elapsed time
   ekf_.F_(0, 2) = dt;
   ekf_.F_(1, 3) = dt;
+    
+  // Acceleration noise
+  float noise_ax = 9;
+  float noise_ay = 9;
   
   // Update the Process Noise Covariance Matrix
   ekf_.Q_ = MatrixXd(4, 4);
@@ -160,13 +159,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.H_ = Hj_;
     ekf_.R_ = R_radar_;
     
-    ekf._UpdateEKF(measurement_pack.raw_measurements_);
+    ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 
   } else {
     
     ekf_.H_ = H_laser_;
     ekf_.R_ = R_laser_;
-	ekf._Update(measurement_pack.raw_measurements_);
+	ekf_.Update(measurement_pack.raw_measurements_);
   }
 
   // print the output

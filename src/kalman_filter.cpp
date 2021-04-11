@@ -65,7 +65,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   float c2 = sqrt(c1); // (px^2 + py^2)^1/2
 
   float ro = c2;
-  float phi = arctan2(py, px);
+  float phi = atan2(py, px);
   float ro_dot = (px*vx + py*vy)/ro;
   
   VectorXd hx = VectorXd(3);
@@ -85,14 +85,6 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
       y(1) += M_PI;
     }
   }
-    
-    y(1) > M_PI || y(1) < -M_PI ) {
-    if ( y(1) > M_PI ) {
-      y(1) -= M_PI;
-    } else {
-      y(1) += M_PI;
-    }
-  }
   
   MatrixXd Ht = H_.transpose(); 
   MatrixXd S = H_ * P_ * Ht + R_; // S = HP'H^T + R
@@ -104,6 +96,6 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   x_ = x_ + (K * y);
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  P_ = (I - K * Hj) * P_;
+  P_ = (I - K * H_) * P_;
  
 }

@@ -22,7 +22,6 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   if (estimations.size() != ground_truth.size()
       || estimations.size() == 0) {
     
-    cout << "Invalid estimation or ground_truth data" << endl;
     return rmse;
   }
 
@@ -66,7 +65,6 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
   // Ensure common term in denominator (px^2 + py^2) is not zero
   // Otherwise - divison by zero error
   if (fabs(c1) < 0.0001) {
-    cout << "CalculateJacobian () - Error - Division by Zero" << endl;
     return Hj;
   }
 
