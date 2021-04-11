@@ -61,7 +61,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   float vy = x_(3);
   
   // Common terms across Jacobian matrix
-  float c1 = px*px+py*py; // (px^2 + py^2)
+  float c1 = px*px + py*py; // (px^2 + py^2)
   float c2 = sqrt(c1); // (px^2 + py^2)^1/2
 
   float ro = c2;
@@ -71,9 +71,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   VectorXd hx = VectorXd(3);
   
   hx << ro, phi, ro_dot;
-  
-  VectorXd z_pred = hx * x_;
-  VectorXd y = z - z_pred; // y = z - hx(x')
+  VectorXd y = z - hx; // y = z - hx(x')
   
   while (fabs(y(1)) > M_PI){
     
