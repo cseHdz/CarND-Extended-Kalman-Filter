@@ -1,4 +1,5 @@
 #include "kalman_filter.h"
+#include "tools.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -52,23 +53,25 @@ void KalmanFilter::Update(const VectorXd &z) {
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  /**
-   * TODO: update the state by using Extended Kalman Filter equations
-   */
   
-  // Non-linear equations coming from Radar
+  // Non-linear - Equations for RADAR Measurement
+  // Assuming vector z has already been converted from polar coordinates
   
-    VectorXd hx(3);
+  // Get the Jacobian Matrix 
+
   
-  double px = z(0);
-  double py = z(1);
-  
-  // Common terms across Jacobian matrix
-  float c1 = px*px+py*py; // (px^2 + py^2)
-  float c2 = sqrt(c1); // (px^2 + py^2)^1/2
-  
-  float 
-  
-  hx << c2
+  VectorXd z_pred = Hj * x_;
+  VectorXd y = z - z_pred; // y = z - Hx'
+  MatrixXd Ht = Hj.transpose(); 
+  MatrixXd S = Hj * P_ * Ht + R_; // S = HP'H^T + R
+  MatrixXd Si = S.inverse(); 
+  MatrixXd PHt = P_ * Ht;
+  MatrixXd K = PHt * Si; // K = P'H^TS^-1
+
+  //new estimate
+  x_ = x_ + (K * y);
+  long x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * Hj) * P_;
  
 }
